@@ -66,7 +66,7 @@ def fdtd_python(Ez, Hx, Hy):
 # Baseline 1: Naive FDTD 2D In Numba
 # ---------------------------------------------------------
 @njit
-def fdtd_numba_python1(Ez, Hx, Hy):
+def fdtd_numba_1(Ez, Hx, Hy):
     
     nx = Ez.shape[0]
     ny = Ez.shape[1]
@@ -92,6 +92,69 @@ def fdtd_numba_python1(Ez, Hx, Hy):
                 Ez[i, j] = Ez[i, j] + (dt / (dx * eps0 * 1.0)) * (
                     (Hy[i, j] - Hy[i-1, j]) - (Hx[i, j] - Hx[i, j-1])
                 )
+
+# ---------------------------------------------------------
+# Baseline 2: Optimization Flags for Backend
+# ---------------------------------------------------------
+@njit(fastmath=True)
+def fdtd_numba_opt_2(Ez, Hx, Hy):
+    
+    nx = Ez.shape[0]
+    ny = Ez.shape[1]
+    sx, sy = nx // 2, ny // 2
+
+    for n in range(steps):
+        # Update Hx field from Ez spatial derivatives
+        for i in range(nx - 1):
+            for j in range(ny - 1):
+                Hx[i, j] = Hx[i, j] - (dt / (dx * mu0)) * (Ez[i, j+1] - Ez[i, j])
+
+        # Update Hy field from Ez spatial derivatives
+        for i in range(nx - 1):
+            for j in range(ny - 1):
+                Hy[i, j] = Hy[i, j] + (dt / (dx * mu0)) * (Ez[i+1, j] - Ez[i, j])
+
+        # Source (sinusoidal wave)
+        Ez[sx, sy] += 0.5
+
+        # Update Ez field from Hx and Hy spatial derivatives
+        for i in range(1, nx - 1):
+            for j in range(1, ny - 1):
+                Ez[i, j] = Ez[i, j] + (dt / (dx * eps0 * 1.0)) * (
+                    (Hy[i, j] - Hy[i-1, j]) - (Hx[i, j] - Hx[i, j-1])
+                )
+
+# ---------------------------------------------------------
+# Baseline 3: Optimization Flags for Backend and Parallel Flags
+# ---------------------------------------------------------
+@njit(parallel=True, fastmath=True)
+def fdtd_numba_opt_par_3(Ez, Hx, Hy):
+    
+    nx = Ez.shape[0]
+    ny = Ez.shape[1]
+    sx, sy = nx // 2, ny // 2
+
+    for n in range(steps):
+        # Update Hx field from Ez spatial derivatives
+        for i in prange(nx - 1):
+            for j in range(ny - 1):
+                Hx[i, j] = Hx[i, j] - (dt / (dx * mu0)) * (Ez[i, j+1] - Ez[i, j])
+
+        # Update Hy field from Ez spatial derivatives
+        for i in prange(nx - 1):
+            for j in range(ny - 1):
+                Hy[i, j] = Hy[i, j] + (dt / (dx * mu0)) * (Ez[i+1, j] - Ez[i, j])
+
+        # Source (sinusoidal wave)
+        Ez[sx, sy] += 0.5
+
+        # Update Ez field from Hx and Hy spatial derivatives
+        for i in prange(1, nx - 1):
+            for j in range(1, ny - 1):
+                Ez[i, j] = Ez[i, j] + (dt / (dx * eps0 * 1.0)) * (
+                    (Hy[i, j] - Hy[i-1, j]) - (Hx[i, j] - Hx[i, j-1])
+                )
+
 
 # ---------------------------------------------------------
 # Execution & Benchmarking Routine
@@ -146,7 +209,9 @@ def run_benchmark(matrix_size=512):
 
     # Baseline functions list
     functions = [
-        ("1_numba_naive", fdtd_numba_python1),
+        ("1_numba_naive", fdtd_numba_1),
+        ("1_numba_optimized", fdtd_numba_opt_2),
+        ("1_numba_parallel_auto", fdtd_numba_opt_par_3),
     ]
 
     for name, fn in functions:
