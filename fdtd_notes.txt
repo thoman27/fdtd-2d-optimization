@@ -1,0 +1,18 @@
+FLOP Calculations
+
+Calculating Hx
+For each point in grid minus one row and column 5 Flops must be performed
+
+Times Hx by two for Hy
+
+Calculating Ez
+For each point in grid minus one row and column 7 Flops must be performed
+
+Consider the source calculations may effect total FLOPs swap to point
+
+FLOPS = (GRID_SIZE_X - 1) * (GRID_SIZE_Y - 1) * (STEPS) * ((2 * 5) + 7)
+
+For 512x512 grid and 200 steps it is 887.8 MFLOPS
+
+If we precalculate some values example: dt / (dx * eps0) 
+we can save 2 FLOPS on every H and E calc bringing total calc down to 574.5 MFLOPS

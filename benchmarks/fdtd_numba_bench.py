@@ -8,7 +8,7 @@ import numpy as np
 
 # Simulation Parameters
 steps = 200                # Total number of time steps
-dx = 0.1                   # Spatial step size (m)
+dx = 0.1                   # Spatial step size (m) (Assume dz = dy = dx)
 
 dt = dx / (math.sqrt(2) * 3.0e8) # Temporal step size based on Courant stability limit 
                                  # Wave cannot be faster than numerical info propogates (dt <= dx/(c * sqrt(Dimensions))
@@ -40,12 +40,14 @@ def fdtd_python(Ez, Hx, Hy):
                 Hy[i, j] = Hy[i, j] + (dt / (dx * mu0)) * (Ez[i+1, j] - Ez[i, j])
 
         # Source (sinusoidal wave)
-        Ez[sx, sy] += np.sin(2 * np.pi * 0.05 * n)
+        #Ez[sx, sy] += np.sin(2 * np.pi * 0.05 * n)
+        #Use simple point source to reduce overhead
+        Ez[sx, sy] += 0.5
 
         # Update Ez field from Hx and Hy spatial derivatives
         for i in range(1, nx - 1):
             for j in range(1, ny - 1):
-                Ez[i, j] = Ez[i, j] + (dt / (dx * eps0 * 1.0)) * (
+                Ez[i, j] = Ez[i, j] + (dt / (dx * eps0)) * (
                     (Hy[i, j] - Hy[i-1, j]) - (Hx[i, j] - Hx[i, j-1])
                 )
 
@@ -82,7 +84,7 @@ def fdtd_numba_python1(Ez, Hx, Hy):
                 Hy[i, j] = Hy[i, j] + (dt / (dx * mu0)) * (Ez[i+1, j] - Ez[i, j])
 
         # Source (sinusoidal wave)
-        Ez[sx, sy] += np.sin(2 * np.pi * 0.05 * n)
+        Ez[sx, sy] += 0.5
 
         # Update Ez field from Hx and Hy spatial derivatives
         for i in range(1, nx - 1):
@@ -102,9 +104,9 @@ def run_benchmark(matrix_size=512):
     B = np.zeros((N, N))
     C = np.zeros((N, N))
 
-    # TODO Compute ground truth reference solution for correctness verification
-    #C_expected = np.dot(A, B)
-    total_flops = 2.0 * (N ** 3) # TODO CALCULATE TOTAL FLOPS
+    #C_expected = np.dot(A, B)S
+    # FLOPS = (GRID_SIZE_X - 1) * (GRID_SIZE_Y - 1) * (STEPS) * ((2 * 5) + 7)
+    total_flops = (N - 1) * (N - 1) * steps * ((2 * 5) + 7)
 
     def measure(fn, warmup=True, reps=9):
         C.fill(0.0)
@@ -185,7 +187,10 @@ if __name__ == "__main__":
 
         print(f"| {name:<33} | {gflops:10.3f} | {abs_speedup:12.2f}x | {rel_speedup:12.2f}x | {status:<8} |")
         prev_elapsed = elapsed
+    divider = "-" * len(header)
 
+    print(divider)
+    print(header)
     print(divider)
 
     # Plotting Output
