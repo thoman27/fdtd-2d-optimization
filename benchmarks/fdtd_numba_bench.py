@@ -201,7 +201,7 @@ def run_benchmark(matrix_size=512):
     t0 = time.perf_counter()
     fdtd_python(A_py, B_py, C_py)
     py_elapsed = time.perf_counter() - t0
-    py_gflops = (2.0 * (N_py ** 3) / py_elapsed) / 1e9
+    py_gflops = (2.0 * ((N - 1) * (N - 1) * steps * ((2 * 5) + 7)) / py_elapsed) / 1e9
     #py_correct = np.allclose(C_py, C_py_expected, rtol=1e-5, atol=1e-5)
     py_correct = True
 
@@ -210,8 +210,8 @@ def run_benchmark(matrix_size=512):
     # Baseline functions list
     functions = [
         ("1_numba_naive", fdtd_numba_1),
-        ("1_numba_optimized", fdtd_numba_opt_2),
-        ("1_numba_parallel_auto", fdtd_numba_opt_par_3),
+        ("2_numba_optimized", fdtd_numba_opt_2),
+        ("3_numba_parallel_auto", fdtd_numba_opt_par_3),
     ]
 
     for name, fn in functions:
