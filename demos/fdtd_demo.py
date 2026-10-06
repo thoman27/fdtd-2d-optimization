@@ -40,9 +40,8 @@ for n in range(steps):
             Hy[i, j] = Hy[i, j] + (dt / (dx * mu0)) * (Ez[i+1, j] - Ez[i, j])
 
     # Source (sinusoidal wave)
-    #Ez[sx, sy] += np.sin(2 * np.pi * 0.05 * n)
-    #Use simple point source to reduce overhead
-    Ez[sx, sy] += 0.5
+    #Use simple line source
+    Ez[sx, sy] += np.sin(2 * np.pi * 0.05 * n)
 
     # Update Ez field from Hx and Hy spatial derivatives
     for i in range(1, nx - 1):
@@ -54,7 +53,7 @@ for n in range(steps):
     # Real-time visualization update every 10 steps
     if n % 10 == 0:
         ax.clear()
-        ax.imshow(Ez, cmap='RdBu', vmin=-0.5, vmax=0.5)
+        ax.imshow(Ez, cmap='RdBu', vmin=-1, vmax=1)
         ax.set_title(f"Step {n}")
         plt.pause(0.01)
 
